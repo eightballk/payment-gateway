@@ -50,12 +50,16 @@ export function useQuery<TResult>({ url, id, queryKey, config }: QueryOptions) {
 			setData(result);
 			setError(null);
 		} catch (err: unknown) {
-			if (err instanceof ApiError && err.status >= 500) retryFetching();
-
 			if (err instanceof ApiError) {
+				if (err.status >= 500) retryFetching();
 				setError(err.message);
 				setErrorStatus(err.status);
-			} else setError("An unknown error occured. Please try again later.");
+			} else {
+				/* No ApiError means the request never got a response at all
+				 * network down, DNS failure, CORS, etc. Treat as retryable too. */
+				retryFetching();
+				setError("An unknown error occured. Please try again later.");
+			}
 		} finally {
 			setIsLoading(false);
 		}
