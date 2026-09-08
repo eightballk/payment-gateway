@@ -6,7 +6,7 @@ import { EllipsisLoader } from "@/components/ui/Loader";
 import { useDefaultAccounts } from "@/lib/hooks/useDefaultAccounts";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { AccountCard } from "./components/AccountCard";
-import { ACCOUNT_PAGE_SIZE } from "@/constants/config";
+import { ACCOUNT_PAGE_SIZE, MAX_REFETCH_ATTEMPTS } from "@/constants/config";
 import { DefaultAccountCard } from "./components/DefaultAccountCard";
 import { Link } from "react-router-dom";
 import { NAVIGATION_ROUTES } from "@/constants/routes";
@@ -26,7 +26,7 @@ export function AccountListPage() {
   const [accounts, setAccounts] = React.useState<AccountResponse[] | null>(null);
   const debouncedSearch = useDebounce(search);
 
-  const { accountList, isLoading, error } = useGetAccounts(page, debouncedSearch);
+  const { accountList, isLoading, error, refetchAttemptsState } = useGetAccounts(page, debouncedSearch);
 
   const totalPages = accountList ? Math.ceil(accountList.total / ACCOUNT_PAGE_SIZE) : 1;
 
@@ -181,7 +181,15 @@ export function AccountListPage() {
           {isLoading && !accounts ? (
             <EllipsisLoader value="Loading accounts" />
           ) : error ? (
-            <p className="text-sm text-red-400 text-center">Failed to load accounts.</p>
+            refetchAttemptsState !== MAX_REFETCH_ATTEMPTS ? (
+              <p className="text-sm text-text-muted text-center">
+              Connection issue - retrying ({refetchAttemptsState}/{MAX_REFETCH_ATTEMPTS})
+              </p>
+            ) : (
+              <p className="text-sm text-red-400 text-center">
+                Failed to load accounts after {MAX_REFETCH_ATTEMPTS} attempts.
+              </p>
+            )
           ) : accounts?.length === 0 ? (
             <p className="text-sm text-text-muted text-center">No accounts found.</p>
           ) : (
